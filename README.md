@@ -15,6 +15,23 @@ It wraps Laravel Swarm's public display-read contracts (introduced in core
 `ReadableAuditOutbox` — so every read is display-decrypted and degrade-safe by
 construction.
 
+## Installation
+
+Require the package via Composer:
+
+```bash
+composer require builtbyberry/laravel-swarm-mcp
+```
+
+Optionally publish the config file:
+
+```bash
+php artisan vendor:publish --tag="swarm-mcp-config"
+```
+
+> Full installation, configuration, and client-connection docs land with the
+> `docs` component of this release.
+
 ## License
 
 The MIT License (MIT). Please see the [License File](LICENSE) for more
