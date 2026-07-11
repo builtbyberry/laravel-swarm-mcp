@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace BuiltByBerry\LaravelSwarmMcp;
 
+use BuiltByBerry\LaravelSwarmMcp\Servers\SwarmObservabilityServer;
+use Laravel\Mcp\Facades\Mcp;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -41,6 +43,19 @@ class SwarmMcpServiceProvider extends PackageServiceProvider
 
         if (file_exists($package->basePath("/../config/{$configFileName}.php"))) {
             $package->hasConfigFile();
+        }
+    }
+
+    public function packageBooted(): void
+    {
+        $config = $this->app->make('config');
+
+        // Register the observability server over the default (stdio) transport,
+        // reachable via `php artisan mcp:start laravel-swarm`. The networked HTTP
+        // transport + its authentication is wired separately (transport-auth).
+        if ($config->get('swarm-mcp.server.enabled', true)
+            && $config->get('swarm-mcp.transports.stdio.enabled', true)) {
+            Mcp::local('laravel-swarm', SwarmObservabilityServer::class);
         }
     }
 }
