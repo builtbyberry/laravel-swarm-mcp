@@ -7,6 +7,7 @@ namespace BuiltByBerry\LaravelSwarmMcp\Tests;
 use BuiltByBerry\LaravelSwarm\SwarmServiceProvider;
 use BuiltByBerry\LaravelSwarmMcp\SwarmMcpServiceProvider;
 use Laravel\Ai\AiServiceProvider;
+use Laravel\Mcp\Server\McpServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -19,6 +20,10 @@ abstract class TestCase extends Orchestra
         return [
             AiServiceProvider::class,
             SwarmServiceProvider::class,
+
+            // laravel/mcp's provider must register before ours so the Mcp
+            // registrar exists when SwarmMcpServiceProvider boots the server.
+            McpServiceProvider::class,
             SwarmMcpServiceProvider::class,
         ];
     }
