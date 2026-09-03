@@ -23,8 +23,8 @@ ciphertext or a failed read.
 
 ## Requirements
 
-- PHP `^8.5`
-- `builtbyberry/laravel-swarm` `^0.19`
+- PHP `^8.4`
+- `builtbyberry/laravel-swarm` `^0.19` through `^0.25`
 - `laravel/mcp` `^0.8`
 
 ## Installation

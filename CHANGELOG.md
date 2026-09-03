@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.1 - 2026-09-03
+
+Compatibility release. Supports PHP `^8.4` and Laravel Swarm `^0.19` through
+`^0.25`, with CI covering PHP 8.4 and 8.5 against latest and lowest dependency
+sets. The read-only MCP resource behavior is unchanged.
+
 ## v0.1.0 - 2026-07-11
 
 Initial release. A read-only [Model Context Protocol](https://modelcontextprotocol.io)
