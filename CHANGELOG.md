@@ -7,6 +7,9 @@
   for the pinned core candidate with minimum and current stable Laravel AI
   `^0.11.2`. Verify installed and locked package versions and official immutable
   source/archive references, with negative controls for invalid evidence.
+- Require the resolved Laravel AI version to satisfy the core package's actual
+  AI contract, with matching lock/installed requirements and negative controls
+  for missing, mismatched, and unsatisfied contracts (review MCP-R1).
 - Exercise successful encrypted run and step reads through the read-only MCP
   resource, alongside the existing poison-row and authenticated-transport tests.
 - Candidate CI uses temporary package metadata instead of waiting for a published

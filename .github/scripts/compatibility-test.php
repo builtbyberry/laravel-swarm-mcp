@@ -31,15 +31,27 @@ function rejects(callable $callback, string $label): void
 $root = readJson($argv[1] ?? __DIR__.'/../../composer.json');
 $candidate = ['name' => CORE, 'require' => ['laravel/ai' => '^0.11.2']];
 $controls = 0;
+$published = [
+    '0.19' => ['5c1df153aaeb927c1de788b8c7af626aca130c7d', '0.8.0', '^0.8'],
+    '0.20' => ['8a6fe26cf6222c04d481bab085212d75b8bf174b', '0.9.0', '^0.9'],
+    '0.21' => ['b49c50c161433eaf03598de64e49d1ca4b8d0257', '0.9.0', '^0.9'],
+    '0.22' => ['315b654e0f4b65e09389537607b5ce7e9038ec8a', '0.9.0', '^0.9'],
+    '0.23' => ['e3ca8b30af3b50592b2f15e1cc1130ecddad66fb', '0.9.0', '^0.9'],
+    '0.25' => [PUBLISHED_REF, '0.10.3', '^0.10.3'],
+];
 foreach (LANES as $lane) {
     $adoption = str_starts_with($lane, 'adoption-');
-    $coreVersion = isset(HISTORICAL[$lane]) ? substr($lane, 5).'.0' : ($adoption ? '0.26.0' : 'v0.25.0');
+    $minor = isset(HISTORICAL[$lane]) ? substr($lane, 5) : ($lane === 'lowest' ? '0.19' : '0.25');
+    [$coreRef, $aiVersion, $aiConstraint] = $adoption
+        ? [CANDIDATE_REF, '0.11.2', '^0.11.2']
+        : $published[$minor];
     $set = packages([
-        package(CORE, $coreVersion, $adoption ? CANDIDATE_REF : PUBLISHED_REF),
-        package('laravel/ai', $adoption ? 'v0.11.2' : 'v0.10.0', $adoption ? AI_MINIMUM_REF : str_repeat('a', 40)),
+        package(CORE, $adoption ? '0.26.0' : 'v'.$minor.'.0', $coreRef),
+        package('laravel/ai', 'v'.$aiVersion, $adoption ? AI_MINIMUM_REF : str_repeat('a', 40)),
         package('laravel/framework', 'v13.16.0', str_repeat('b', 40)),
         package('laravel/mcp', 'v0.8.0', str_repeat('c', 40)),
     ]);
+    $set[CORE]['require']['laravel/ai'] = $aiConstraint;
     verify($set, $set, $lane);
     $prepared = prepare($root, $lane, $candidate);
     check($lane !== 'lowest' || $prepared === $root, 'Lowest lane must keep original constraints.');
@@ -57,9 +69,6 @@ foreach (LANES as $lane) {
             $controls += 2;
         }
         foreach (['dev-main', 'v99.0.0'] as $version) {
-            if ($name === 'laravel/ai' && ! $adoption && $version === 'v99.0.0') {
-                continue; // Legacy lanes retain their own transitive AI constraints.
-            }
             $bad = $set;
             $bad[$name]['version'] = $version;
             rejects(fn () => verify($bad, $bad, $lane), "incorrect {$name} version");
@@ -95,6 +104,30 @@ foreach (LANES as $lane) {
         }
         $controls += 6;
     }
+    foreach (['locked', 'installed', 'both'] as $missing) {
+        $lock = $set;
+        $installed = $set;
+        if ($missing !== 'installed') {
+            unset($lock[CORE]['require']['laravel/ai']);
+        }
+        if ($missing !== 'locked') {
+            unset($installed[CORE]['require']['laravel/ai']);
+        }
+        rejects(fn () => verify($lock, $installed, $lane), 'missing '.$missing.' core AI contract');
+        $controls++;
+    }
+    $bad = $set;
+    $bad[CORE]['require']['laravel/ai'] = '^99.0';
+    rejects(fn () => verify($set, $bad, $lane), 'lock/install core AI contract mismatch');
+    rejects(fn () => verify($bad, $set, $lane), 'installed/lock core AI contract mismatch');
+    rejects(fn () => verify($bad, $bad, $lane), 'unsatisfied actual core AI contract');
+    $controls += 3;
+    foreach ($adoption ? [] : ($lane === 'published-0.25' ? ['0.10.0', '0.11.2'] : ['0.10.3']) as $incompatibleAi) {
+        $bad = $set;
+        $bad['laravel/ai']['version'] = $incompatibleAi;
+        rejects(fn () => verify($bad, $bad, $lane), 'official stable AI outside resolved core contract');
+        $controls++;
+    }
     foreach (['0.10.3', '0.11.0', '0.11.1'] as $oldAi) {
         if ($adoption) {
             $bad = $set;
@@ -112,7 +145,7 @@ foreach (LANES as $lane) {
             continue;
         }
         $bad = $set;
-        $bad[$name] = package($name, $set[$name]['version'], str_repeat('d', 40));
+        $bad[$name] = array_replace($set[$name], package($name, $set[$name]['version'], str_repeat('d', 40)));
         rejects(fn () => verify($bad, $bad, $lane), 'wrong pinned commit in otherwise consistent evidence');
         $controls++;
     }

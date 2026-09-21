@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace McpCompatibility;
 
+use Composer\Semver\Semver;
+
 const CORE = 'builtbyberry/laravel-swarm';
 const CANDIDATE_REF = 'e25842cab4291837dcce2ff6f4815e58feab9079';
 const PUBLISHED_REF = 'be7df78e8fde12362cfff9007cfe723d572a5e4f';
@@ -94,6 +96,10 @@ function verify(array $locked, array $installed, string $lane): array
         }
         $evidence[] = "{$name} {$actual['version']} {$ref}";
     }
+
+    $constraint = $locked[CORE]['require']['laravel/ai'] ?? null;
+    check(is_string($constraint) && ($installed[CORE]['require']['laravel/ai'] ?? null) === $constraint, 'Installed core AI contract differs from lock or is absent.');
+    check(Semver::satisfies($installed['laravel/ai']['version'], $constraint), 'AI does not satisfy the resolved core contract.');
 
     return $evidence;
 }
