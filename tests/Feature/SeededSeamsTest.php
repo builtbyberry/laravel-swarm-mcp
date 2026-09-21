@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use BuiltByBerry\LaravelSwarm\Contracts\RunHistoryStore;
+use BuiltByBerry\LaravelSwarm\Responses\SwarmResponse;
+use BuiltByBerry\LaravelSwarm\Responses\SwarmStep;
+use BuiltByBerry\LaravelSwarm\Support\RunContext;
 use BuiltByBerry\LaravelSwarmMcp\Resources\AuditOutboxQueueResource;
 use BuiltByBerry\LaravelSwarmMcp\Resources\AuditOutboxRecordResource;
 use BuiltByBerry\LaravelSwarmMcp\Resources\DurableRunResource;
@@ -136,4 +140,43 @@ it('degrades a poison audit-outbox payload on record fetch', function () {
         ->and($body['payload'])->toBeNull()
         ->and($body['payload_available'])->toBeFalse()
         ->and((string) $response->content())->not->toContain('sw0:');
+});
+
+it('reads encrypted run and step values without changing persisted evidence', function () {
+    config()->set('swarm.persistence.encrypt_at_rest', true);
+    config()->set('swarm.capture.inputs', true);
+    config()->set('swarm.capture.outputs', true);
+    config()->set('swarm.capture.active_context', true);
+
+    $runId = 'encrypted-run';
+    $context = new RunContext(runId: $runId, input: 'Original task');
+    $step = new SwarmStep('App\\Agents\\Example', 'Step input', 'Step output', metadata: ['index' => 0]);
+    $history = app(RunHistoryStore::class);
+    $history->start($runId, 'App\\Swarms\\Example', 'sequential', $context, [], 3600);
+    $history->recordStep($runId, $step, 3600);
+    $history->complete($runId, new SwarmResponse('Final answer', [$step], context: $context), 3600);
+
+    $before = DB::table('swarm_run_histories')->where('run_id', $runId)->first();
+    $stepsBefore = DB::table('swarm_run_steps')->where('run_id', $runId)->get()->toArray();
+    expect($before->output)->toStartWith('sw0:')
+        ->and(json_decode($before->context, true)['input'])->toStartWith('sw0:')
+        ->and($stepsBefore[0]->input)->toStartWith('sw0:')
+        ->and($stepsBefore[0]->output)->toStartWith('sw0:');
+
+    $response = handleResource(RunResource::class, "swarm://runs/{$runId}", ['runId' => $runId]);
+    $body = decode($response);
+
+    expect($response->isError())->toBeFalse()
+        ->and($body['context']['input'])->toBe('Original task')
+        ->and($body['context_available'])->toBeTrue()
+        ->and($body['output'])->toBe('Final answer')
+        ->and($body['output_available'])->toBeTrue()
+        ->and($body['steps'])->toHaveCount(1)
+        ->and($body['steps'][0]['input'])->toBe('Step input')
+        ->and($body['steps'][0]['output'])->toBe('Step output')
+        ->and($body['steps'][0]['input_available'])->toBeTrue()
+        ->and($body['steps'][0]['output_available'])->toBeTrue()
+        ->and((string) $response->content())->not->toContain('sw0:')
+        ->and(DB::table('swarm_run_histories')->where('run_id', $runId)->first())->toEqual($before)
+        ->and(DB::table('swarm_run_steps')->where('run_id', $runId)->get()->toArray())->toEqual($stepsBefore);
 });
