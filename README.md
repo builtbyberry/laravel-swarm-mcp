@@ -24,7 +24,7 @@ ciphertext or a failed read.
 ## Requirements
 
 - PHP `^8.4`
-- `builtbyberry/laravel-swarm` `^0.19` through `^0.25`
+- `builtbyberry/laravel-swarm` `^0.19` through `^0.26`
 - `laravel/mcp` `^0.8`
 
 ## Installation
@@ -132,6 +132,12 @@ composer test       # Pest
 composer analyse    # PHPStan (level 8)
 composer lint       # Pint
 ```
+
+CI retains historical core lanes and the published core `v0.25.0` baseline, and
+checks a pinned core `v0.26.0` candidate against the minimum and current stable
+Laravel AI `^0.11.2` dependencies. Candidate metadata is temporary CI input;
+passing those lanes does not prove published installation compatibility. That
+requires a fresh Packagist-only installation after core and companion publication.
 
 ## License
 

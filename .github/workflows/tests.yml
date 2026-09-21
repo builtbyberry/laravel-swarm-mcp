@@ -1,14 +1,14 @@
 name: tests
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
       - main
       - 'release/**'
   pull_request:
-
-permissions:
-  contents: read
 
 jobs:
   tests:
@@ -22,8 +22,10 @@ jobs:
           - '8.4'
           - '8.5'
         dependencies:
-          - stable-latest
           - lowest
+          - published-0.25
+          - adoption-minimum
+          - adoption-current
 
     steps:
       - name: Checkout code
@@ -38,35 +40,48 @@ jobs:
           tools: composer:v2
           ini-values: memory_limit=1G
 
-      - name: Install dependencies
-        if: matrix.dependencies == 'stable-latest'
+      - name: Preserve original manifest for guard tests
+        run: cp composer.json "$RUNNER_TEMP/mcp-composer.json"
+
+      - name: Prepare published baseline
+        if: matrix.dependencies == 'published-0.25'
+        run: php .github/scripts/compatibility.php prepare published-0.25
+
+      # This manifest and archive are pinned candidate inputs, not a published tag.
+      - name: Prepare pinned core candidate
+        if: startsWith(matrix.dependencies, 'adoption-')
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/builtbyberry/laravel-swarm/e25842cab4291837dcce2ff6f4815e58feab9079/composer.json \
+            --output "$RUNNER_TEMP/core-candidate.json"
+          php .github/scripts/compatibility.php prepare '${{ matrix.dependencies }}' "$RUNNER_TEMP/core-candidate.json"
+
+      - name: Install current stable dependencies
+        if: matrix.dependencies == 'published-0.25' || matrix.dependencies == 'adoption-current'
         run: composer update --prefer-stable --prefer-dist --no-interaction --no-progress
 
       - name: Install lowest dependencies
-        if: matrix.dependencies == 'lowest'
+        if: matrix.dependencies == 'lowest' || matrix.dependencies == 'adoption-minimum'
         run: composer update --prefer-lowest --prefer-stable --prefer-dist --no-interaction --no-progress
 
-      - name: Verify published PHP 8.4 core
-        if: matrix.php == '8.4'
-        shell: bash
-        run: |
-          version=$(composer show --format=json builtbyberry/laravel-swarm | jq -er '.versions[0]')
-          echo "Resolved Laravel Swarm version: $version"
+      - name: Test dependency evidence guards
+        run: php .github/scripts/compatibility-test.php "$RUNNER_TEMP/mcp-composer.json"
 
-          if [[ "$version" != "v0.25."* ]]; then
-            echo "::error::Expected a published Laravel Swarm v0.25 release on PHP 8.4, resolved $version."
-            exit 1
-          fi
+      - name: Verify installed and locked dependencies
+        run: php .github/scripts/compatibility.php verify '${{ matrix.dependencies }}'
 
       - name: Execute tests
         run: composer test
 
       - name: Execute static analysis
-        if: matrix.dependencies == 'stable-latest'
-        run: composer analyse
+        if: matrix.dependencies == 'published-0.25' || matrix.dependencies == 'adoption-current'
+        run: |
+          vendor/bin/phpstan clear-result-cache
+          composer analyse
 
       - name: Execute code style check
-        if: matrix.dependencies == 'stable-latest'
+        if: matrix.dependencies == 'published-0.25' || matrix.dependencies == 'adoption-current'
         run: composer lint
 
   intermediate-core-compatibility:
@@ -78,13 +93,13 @@ jobs:
       matrix:
         include:
           - core: '0.20.*'
-            expected: 'v0.20.'
+            lane: core-0.20
           - core: '0.21.*'
-            expected: 'v0.21.'
+            lane: core-0.21
           - core: '0.22.*'
-            expected: 'v0.22.'
+            lane: core-0.22
           - core: '0.23.*'
-            expected: 'v0.23.'
+            lane: core-0.23
 
     steps:
       - name: Checkout code
@@ -101,19 +116,11 @@ jobs:
 
       - name: Install exact core minor
         run: |
-          composer require --no-update "builtbyberry/laravel-swarm:${{ matrix.core }}"
+          php .github/scripts/compatibility.php prepare '${{ matrix.lane }}'
           composer update --prefer-stable --prefer-dist --no-interaction --no-progress
 
-      - name: Verify resolved core version
-        shell: bash
-        run: |
-          version=$(composer show --format=json builtbyberry/laravel-swarm | jq -er '.versions[0]')
-          echo "Resolved Laravel Swarm version: $version"
-
-          if [[ "$version" != "${{ matrix.expected }}"* ]]; then
-            echo "::error::Expected Laravel Swarm ${{ matrix.core }}, resolved $version."
-            exit 1
-          fi
+      - name: Verify installed and locked dependencies
+        run: php .github/scripts/compatibility.php verify '${{ matrix.lane }}'
 
       - name: Execute tests
         run: composer test

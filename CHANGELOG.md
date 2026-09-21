@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Add Laravel Swarm `^0.26` compatibility while retaining `^0.19` through `^0.25`.
+- Retain published and historical dependency coverage and add PHP 8.4/8.5 lanes
+  for the pinned core candidate with minimum and current stable Laravel AI
+  `^0.11.2`. Verify installed and locked package versions and official immutable
+  source/archive references, with negative controls for invalid evidence.
+- Exercise successful encrypted run and step reads through the read-only MCP
+  resource, alongside the existing poison-row and authenticated-transport tests.
+- Candidate CI uses temporary package metadata instead of waiting for a published
+  core tag. This proves candidate compatibility only; fresh Packagist-only
+  installation evidence remains required after publication. Runtime behavior is
+  unchanged.
+
 ## v0.1.1 - 2026-09-03
 
 Compatibility release. Supports PHP `^8.4` and Laravel Swarm `^0.19` through
