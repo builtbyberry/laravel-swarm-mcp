@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.1.2 - 2026-09-21
 
 - Add Laravel Swarm `^0.26` compatibility while retaining `^0.19` through `^0.25`.
 - Retain published and historical dependency coverage and add PHP 8.4/8.5 lanes
