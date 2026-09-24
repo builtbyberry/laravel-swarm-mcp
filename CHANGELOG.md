@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.2.0 - unreleased
+
+Compatibility with Laravel Swarm v0.27.0 and Laravel AI 1.0.
+
+### Added
+
+_To be filled in during release wrap-up._
+
+### Changed
+
+_To be filled in during release wrap-up._
+
 ## v0.1.2 - 2026-09-21
 
 - Add Laravel Swarm `^0.26` compatibility while retaining `^0.19` through `^0.25`.
