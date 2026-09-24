@@ -137,17 +137,18 @@ composer analyse    # PHPStan (level 8)
 composer lint       # Pint
 ```
 
-CI retains historical core lanes and the published core `v0.25.0` baseline, and
-checks pinned core `v0.26.0` / AI `^0.11.2` and core `v0.27.0` / AI `^1.0`
-candidates against minimum and current stable dependencies. All sixteen runtime
+CI retains historical core lanes and the published core `v0.25.0` baseline. The
+v0.2.0 compatibility work was validated against pinned core `v0.26.0` / AI
+`^0.11.2` and core `v0.27.0` / AI `^1.0` candidates at minimum and current
+stable dependencies. All sixteen runtime
 lanes use native MCP `^1.0`; the existing branch-naming gate remains. Tests exercise
 authenticated native HTTP discovery, exact primitive inventory, all six resource
 reads, protocol errors and guest rejection. See [native MCP compatibility
 evidence](docs/native-mcp-1-compatibility.md) for source pins and reproduction.
 
-Candidate metadata is temporary CI input; passing those lanes does not prove
-published installation compatibility. That requires a fresh Packagist-only
-installation after core and companion publication.
+Candidate metadata was temporary CI input; those lanes are historical
+prepublication evidence. Fresh Packagist-only installation after core and
+companion publication remains a separate shipping gate.
 
 ## License
 
