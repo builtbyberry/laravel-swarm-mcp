@@ -41,23 +41,31 @@ $published = [
 ];
 foreach (LANES as $lane) {
     $adoption = str_starts_with($lane, 'adoption-');
+    $native1 = str_starts_with($lane, 'native1-');
+    $isCandidate = $adoption || $native1;
     $minor = isset(HISTORICAL[$lane]) ? substr($lane, 5) : ($lane === 'lowest' ? '0.19' : '0.25');
     [$coreRef, $aiVersion, $aiConstraint] = $adoption
         ? [CANDIDATE_REF, '0.11.2', '^0.11.2']
         : $published[$minor];
+    if ($native1) {
+        [$coreRef, $aiVersion, $aiConstraint] = [NATIVE1_CANDIDATE_REF, '1.0.0', '^1.0'];
+    }
+    $candidate['require']['laravel/ai'] = $aiConstraint;
     $set = packages([
-        package(CORE, $adoption ? '0.26.0' : 'v'.$minor.'.0', $coreRef),
-        package('laravel/ai', 'v'.$aiVersion, $adoption ? AI_MINIMUM_REF : str_repeat('a', 40)),
+        package(CORE, $native1 ? '0.27.0' : ($adoption ? '0.26.0' : 'v'.$minor.'.0'), $coreRef),
+        package('laravel/ai', 'v'.$aiVersion, $native1 ? NATIVE1_AI_MINIMUM_REF : ($adoption ? AI_MINIMUM_REF : str_repeat('a', 40))),
         package('laravel/framework', 'v13.16.0', str_repeat('b', 40)),
-        package('laravel/mcp', 'v0.8.0', str_repeat('c', 40)),
+        package('laravel/mcp', 'v1.0.0', MCP_MINIMUM_REF),
     ]);
     $set[CORE]['require']['laravel/ai'] = $aiConstraint;
     verify($set, $set, $lane);
     $prepared = prepare($root, $lane, $candidate);
     check($lane !== 'lowest' || $prepared === $root, 'Lowest lane must keep original constraints.');
-    check(! $adoption || $prepared['repositories'][0]['package']['source']['reference'] === CANDIDATE_REF, 'Candidate must be immutable.');
-    check(! $adoption || $prepared['require-dev']['laravel/ai'] === ($lane === 'adoption-minimum' ? '0.11.2' : '^0.11.2'), 'Wrong AI lane pin.');
+    check(! $isCandidate || $prepared['repositories'][0]['package']['source']['reference'] === $coreRef, 'Candidate must be immutable.');
+    check(! $isCandidate || $prepared['require-dev']['laravel/ai'] === (str_ends_with($lane, '-minimum') ? $aiVersion : $aiConstraint), 'Wrong AI lane pin.');
     check($lane !== 'published-0.25' || $prepared['require'][CORE] === '0.25.0', 'Published lane must stay pinned.');
+
+    check($lane !== 'native1-minimum' || $prepared['require']['laravel/mcp'] === '1.0.0', 'Wrong MCP minimum pin.');
 
     // Mutate the Composer evidence shape, both independently and in agreement.
     foreach (array_keys($set) as $name) {
@@ -122,7 +130,7 @@ foreach (LANES as $lane) {
     rejects(fn () => verify($bad, $set, $lane), 'installed/lock core AI contract mismatch');
     rejects(fn () => verify($bad, $bad, $lane), 'unsatisfied actual core AI contract');
     $controls += 3;
-    foreach ($adoption ? [] : ($lane === 'published-0.25' ? ['0.10.0', '0.11.2'] : ['0.10.3']) as $incompatibleAi) {
+    foreach ($isCandidate ? [] : ($lane === 'published-0.25' ? ['0.10.0', '0.11.2'] : ['0.10.3']) as $incompatibleAi) {
         $bad = $set;
         $bad['laravel/ai']['version'] = $incompatibleAi;
         rejects(fn () => verify($bad, $bad, $lane), 'official stable AI outside resolved core contract');
@@ -136,12 +144,24 @@ foreach (LANES as $lane) {
             $controls++;
         }
     }
+    foreach (['0.8.0', '0.11.2'] as $oldVersion) {
+        $bad = $set;
+        $bad['laravel/mcp']['version'] = $oldVersion;
+        rejects(fn () => verify($bad, $bad, $lane), 'old MCP');
+        $controls++;
+        if ($native1) {
+            $bad = $set;
+            $bad['laravel/ai']['version'] = $oldVersion;
+            rejects(fn () => verify($bad, $bad, $lane), 'old AI on native1 candidate');
+            $controls++;
+        }
+    }
     $differentInstalled = $set;
     $differentInstalled['laravel/framework'] = package('laravel/framework', 'v13.17.0', str_repeat('e', 40));
     rejects(fn () => verify($set, $differentInstalled, $lane), 'valid installed package differs from lock');
     $controls++;
-    foreach ([CORE, 'laravel/ai'] as $name) {
-        if (($name === CORE && ($lane === 'lowest' || isset(HISTORICAL[$lane]))) || ($name === 'laravel/ai' && $lane !== 'adoption-minimum')) {
+    foreach ([CORE, 'laravel/ai', 'laravel/mcp'] as $name) {
+        if (($name === CORE && ($lane === 'lowest' || isset(HISTORICAL[$lane]))) || ($name === 'laravel/ai' && ! in_array($lane, ['adoption-minimum', 'native1-minimum'], true)) || ($name === 'laravel/mcp' && $lane !== 'native1-minimum')) {
             continue;
         }
         $bad = $set;
@@ -152,8 +172,14 @@ foreach (LANES as $lane) {
 }
 rejects(fn () => prepare($root, 'adoption-current', ['name' => 'example/fork', 'require' => ['laravel/ai' => '^0.11.2']]), 'wrong manifest identity');
 rejects(fn () => prepare($root, 'adoption-current', ['name' => CORE, 'require' => ['laravel/ai' => '^0.10']]), 'wrong manifest contract');
+rejects(fn () => prepare($root, 'native1-current', ['name' => 'example/fork', 'require' => ['laravel/ai' => '^1.0']]), 'wrong native1 manifest identity');
+rejects(fn () => prepare($root, 'native1-current', ['name' => CORE, 'require' => ['laravel/ai' => '^0.11.2']]), 'old native1 manifest contract');
+rejects(fn () => prepare($root, 'adoption-current', ['name' => CORE, 'require' => ['laravel/ai' => '^1.0']]), 'new AI on old candidate');
+$badMcpRoot = $root;
+$badMcpRoot['require']['laravel/mcp'] = '^0.8';
+rejects(fn () => prepare($badMcpRoot, 'native1-current', ['name' => CORE, 'require' => ['laravel/ai' => '^1.0']]), 'old MCP manifest');
 $badRoot = $root;
 $badRoot['require'][CORE] = '^0.26';
-rejects(fn () => prepare($badRoot, 'adoption-current', $candidate), 'dropped older ranges');
+rejects(fn () => prepare($badRoot, 'adoption-current', ['name' => CORE, 'require' => ['laravel/ai' => '^0.11.2']]), 'dropped older ranges');
 rejects(fn () => verify([], [], 'unknown'), 'unknown lane');
-echo count(LANES).' positive lanes and '.($controls + 4)." negative dependency controls passed.\n";
+echo count(LANES).' positive lanes and '.($controls + 8)." negative dependency controls passed.\n";
