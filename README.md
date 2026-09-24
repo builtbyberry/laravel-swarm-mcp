@@ -24,8 +24,12 @@ ciphertext or a failed read.
 ## Requirements
 
 - PHP `^8.4`
-- `builtbyberry/laravel-swarm` `^0.19` through `^0.26`
-- `laravel/mcp` `^0.8`
+- `builtbyberry/laravel-swarm` `^0.19` through `^0.27`
+- `laravel/mcp` `^1.0`
+
+Version 0.2 requires native Laravel MCP 1.x. See [Upgrading](UPGRADING.md) for
+the dependency and client protocol change. The six read-only resources retain
+their URIs; no tools or prompts are registered.
 
 ## Installation
 
@@ -133,11 +137,18 @@ composer analyse    # PHPStan (level 8)
 composer lint       # Pint
 ```
 
-CI retains historical core lanes and the published core `v0.25.0` baseline, and
-checks a pinned core `v0.26.0` candidate against the minimum and current stable
-Laravel AI `^0.11.2` dependencies. Candidate metadata is temporary CI input;
-passing those lanes does not prove published installation compatibility. That
-requires a fresh Packagist-only installation after core and companion publication.
+CI retains historical core lanes and the published core `v0.25.0` baseline. The
+v0.2.0 compatibility work was validated against pinned core `v0.26.0` / AI
+`^0.11.2` and core `v0.27.0` / AI `^1.0` candidates at minimum and current
+stable dependencies. All sixteen runtime
+lanes use native MCP `^1.0`; the existing branch-naming gate remains. Tests exercise
+authenticated native HTTP discovery, exact primitive inventory, all six resource
+reads, protocol errors and guest rejection. See [native MCP compatibility
+evidence](docs/native-mcp-1-compatibility.md) for source pins and reproduction.
+
+Candidate metadata was temporary CI input; those lanes are historical
+prepublication evidence. Fresh Packagist-only installation after core and
+companion publication remains a separate shipping gate.
 
 ## License
 

@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.2.0 - unreleased
+
+### Added
+
+- Add Laravel Swarm `^0.27` compatibility while retaining `^0.19` through `^0.26`.
+- Add PHP 8.4/8.5 minimum/current core 0.27 + AI 1.x candidate lanes alongside
+  the twelve retained runtime lanes. Check official MCP 1.x source/archive
+  provenance and exact AI/MCP minimum references; retain core 0.26 candidate proof.
+- Exercise authenticated native discovery, two fixed resources and four resource
+  templates, empty tool/prompt lists, all six persisted resource reads, degraded
+  fields and unchanged rows, native error envelopes, protocol metadata/header
+  validation, and guest rejection before a display read.
+
+### Changed
+
+- **Dependency break:** require official `laravel/mcp ^1.0` instead of `^0.8`.
+  Follow native MCP 1.x protocol and error semantics without rewriting the server
+  or adding control tools. Existing resource handlers, URIs and application-owned
+  authorization remain unchanged. See [UPGRADING.md](UPGRADING.md).
+- Candidate dependency overrides remain temporary test fixtures. These checks do
+  not establish published installation; the post-publication Packagist-only
+  proof is separate. See [compatibility evidence](docs/native-mcp-1-compatibility.md).
+
 ## v0.1.2 - 2026-09-21
 
 - Add Laravel Swarm `^0.26` compatibility while retaining `^0.19` through `^0.25`.
