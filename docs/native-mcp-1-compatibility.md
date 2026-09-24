@@ -117,5 +117,5 @@ targeted check and passed after byte-exact restoration. The production manifest
 was never prepared in place; temporary overrides, locks and installed metadata
 remain in isolated evidence fixtures. No production PHP adapter was necessary.
 Lowest dependencies emitted an upstream Symfony translation nullable-parameter
-deprecation; tests and required gates passed. Hosted PHP 8.4/8.5 results still
-must be verified at the reviewed component head before merge.
+deprecation; tests and required gates passed. Hosted PHP 8.4/8.5 results passed
+at the reviewed component head in [Actions run 35952942926](https://github.com/builtbyberry/laravel-swarm-mcp/actions/runs/35952942926).
