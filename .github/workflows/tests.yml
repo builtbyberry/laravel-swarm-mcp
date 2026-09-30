@@ -28,6 +28,8 @@ jobs:
           - adoption-current
           - native1-minimum
           - native1-current
+          - native1-028-minimum
+          - native1-028-current
 
     steps:
       - name: Checkout code
@@ -60,7 +62,7 @@ jobs:
           php .github/scripts/compatibility.php prepare '${{ matrix.dependencies }}' "$RUNNER_TEMP/core-candidate.json"
 
       - name: Prepare pinned core 0.27 candidate
-        if: startsWith(matrix.dependencies, 'native1-')
+        if: matrix.dependencies == 'native1-minimum' || matrix.dependencies == 'native1-current'
         shell: bash
         run: |
           curl --fail --silent --show-error --location \
@@ -68,12 +70,22 @@ jobs:
             --output "$RUNNER_TEMP/core-candidate.json"
           php .github/scripts/compatibility.php prepare '${{ matrix.dependencies }}' "$RUNNER_TEMP/core-candidate.json"
 
+      # Pinned core 0.28 candidate (release/v0.28.0 HEAD 6c3da95); native AI 1 line.
+      - name: Prepare pinned core 0.28 candidate
+        if: startsWith(matrix.dependencies, 'native1-028-')
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/builtbyberry/laravel-swarm/6c3da95fcb3bc89a2ec0096346bd6efb11366cda/composer.json \
+            --output "$RUNNER_TEMP/core-candidate.json"
+          php .github/scripts/compatibility.php prepare '${{ matrix.dependencies }}' "$RUNNER_TEMP/core-candidate.json"
+
       - name: Install current stable dependencies
-        if: matrix.dependencies == 'published-0.25' || matrix.dependencies == 'adoption-current' || matrix.dependencies == 'native1-current'
+        if: matrix.dependencies == 'published-0.25' || matrix.dependencies == 'adoption-current' || matrix.dependencies == 'native1-current' || matrix.dependencies == 'native1-028-current'
         run: composer update --prefer-stable --prefer-dist --no-interaction --no-progress
 
       - name: Install lowest dependencies
-        if: matrix.dependencies == 'lowest' || matrix.dependencies == 'adoption-minimum' || matrix.dependencies == 'native1-minimum'
+        if: matrix.dependencies == 'lowest' || matrix.dependencies == 'adoption-minimum' || matrix.dependencies == 'native1-minimum' || matrix.dependencies == 'native1-028-minimum'
         run: composer update --prefer-lowest --prefer-stable --prefer-dist --no-interaction --no-progress
 
       - name: Test dependency evidence guards
@@ -86,13 +98,13 @@ jobs:
         run: composer test
 
       - name: Execute static analysis
-        if: matrix.dependencies == 'published-0.25' || matrix.dependencies == 'adoption-current' || matrix.dependencies == 'native1-current'
+        if: matrix.dependencies == 'published-0.25' || matrix.dependencies == 'adoption-current' || matrix.dependencies == 'native1-current' || matrix.dependencies == 'native1-028-current'
         run: |
           vendor/bin/phpstan clear-result-cache
           composer analyse
 
       - name: Execute code style check
-        if: matrix.dependencies == 'published-0.25' || matrix.dependencies == 'adoption-current' || matrix.dependencies == 'native1-current'
+        if: matrix.dependencies == 'published-0.25' || matrix.dependencies == 'adoption-current' || matrix.dependencies == 'native1-current' || matrix.dependencies == 'native1-028-current'
         run: composer lint
 
   intermediate-core-compatibility:
