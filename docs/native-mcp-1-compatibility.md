@@ -1,9 +1,12 @@
 # Native MCP 1 compatibility
 
 The v0.2.0 companion uses official Laravel MCP `^1.0`, adds core `^0.27` and
-retains core `^0.19` through `^0.26`. Production Composer metadata contains no
-candidate repositories, replacements or dependency aliases. The dev-main alias
-names only this companion's own 0.2 development line.
+retains core `^0.19` through `^0.26`. v0.3.0 additionally adds core `^0.28`
+(native Laravel AI feature access), validated against the frozen core `v0.28.0`
+candidate `269f749102f8d4c525c12e5486c3f57893d78d6b` (release/v0.28.0) with the
+same native AI 1.x and MCP `^1.0` lines; no runtime, MCP-contract or schema change.
+Production Composer metadata contains no candidate repositories, replacements or
+dependency aliases. The dev-main alias names only this companion's own development line.
 
 ## Tested wire surface
 
@@ -58,6 +61,7 @@ and [HTTP statuses](https://github.com/laravel/mcp/blob/cfa4f38f82873eeb68485278
 | --- | --- | --- |
 | Retained core 0.26 candidate | `e25842cab4291837dcce2ff6f4815e58feab9079` | `^0.11.2` |
 | Core 0.27 candidate | `48ad4ef690363ca40ba7d3bd50e63e7fbe76ba4b` | `^1.0` |
+| Core 0.28 candidate | `269f749102f8d4c525c12e5486c3f57893d78d6b` | `^1.0` |
 
 Native minimum pins are AI 1.0.0
 `101c7ea33cd8569d82570f753fbf38e48b7d3d95` and MCP 1.0.0
@@ -67,13 +71,16 @@ resolved core's actual AI constraint. Negative controls reject wrong generations
 wrong minimum references, missing evidence, forks, replaced archives and drift.
 
 CI retains twelve runtime lanes: PHP 8.4/8.5 × lowest, published-0.25,
-adoption-minimum and adoption-current; plus PHP 8.5 core0.20–0.23. Four added lanes
-cover PHP 8.4/8.5 × native1-minimum/current. Every lane resolves MCP 1.x and runs
-the Feature suite. The existing branch-naming gate remains. Candidate current,
-old adoption-current and published0.25 lanes also run analysis/lint.
+adoption-minimum and adoption-current; plus PHP 8.5 core0.20–0.23. Four lanes cover
+PHP 8.4/8.5 × native1-minimum/current (core 0.27), and four further lanes cover
+PHP 8.4/8.5 × native1-028-minimum/current (core 0.28), for twenty lanes overall.
+Every lane resolves MCP 1.x and runs the Feature suite. The existing branch-naming
+gate remains. The published0.25, adoption-current, native1-current and
+native1-028-current lanes also run analysis/lint.
 
 To reproduce a candidate lane, use a disposable checkout, save its production
-manifest, fetch the frozen core manifest linked by the workflow, then run:
+manifest, fetch the frozen core manifest the workflow pins for that lane (core
+0.27 `48ad4ef` for native1-*, core 0.28 `269f749` for native1-028-*), then run:
 
 ```sh
 php .github/scripts/compatibility.php prepare native1-minimum /path/to/core-candidate.json
@@ -111,11 +118,13 @@ and the full Feature suite (39 tests, 195 assertions each):
 | lowest | published 0.19.0 / 0.8.0 / 1.0.0 / 13.14.0 | existing lowest-lane test gate |
 | adoption-current | candidate 0.26.0 / 0.11.2 / 1.0.0 / 13.33.0 | analysis, lint |
 
-The dependency guard suite passed ten positive lane models and 923 negative
-controls in each environment. All four described fault probes failed their
-targeted check and passed after byte-exact restoration. The production manifest
-was never prepared in place; temporary overrides, locks and installed metadata
-remain in isolated evidence fixtures. No production PHP adapter was necessary.
-Lowest dependencies emitted an upstream Symfony translation nullable-parameter
-deprecation; tests and required gates passed. Hosted PHP 8.4/8.5 results passed
-at the reviewed component head in [Actions run 35952942926](https://github.com/builtbyberry/laravel-swarm-mcp/actions/runs/35952942926).
+The dependency guard suite passed twelve positive lane models and 1,111 negative
+controls in each environment (v0.2.0 ran ten lanes and 923 controls; v0.3.0 adds
+the two `native1-028` lanes and their discriminating controls, including one that
+rejects a v0.27 core on the v0.28 lane). All fault probes failed their targeted
+check and passed after byte-exact restoration. The production manifest was never
+prepared in place; temporary overrides, locks and installed metadata remain in
+isolated evidence fixtures. No production PHP adapter was necessary. The v0.2.0
+runtime lanes passed at the reviewed component head in [Actions run 35952942926](https://github.com/builtbyberry/laravel-swarm-mcp/actions/runs/35952942926);
+the v0.3.0 `native1-028` lanes are proven by this companion's CI on the v0.3.0
+compatibility pull request.
