@@ -3,7 +3,7 @@
 The v0.2.0 companion uses official Laravel MCP `^1.0`, adds core `^0.27` and
 retains core `^0.19` through `^0.26`. v0.3.0 additionally adds core `^0.28`
 (native Laravel AI feature access), validated against the frozen core `v0.28.0`
-candidate `6c3da95fcb3bc89a2ec0096346bd6efb11366cda` (release/v0.28.0) with the
+candidate `269f749102f8d4c525c12e5486c3f57893d78d6b` (release/v0.28.0) with the
 same native AI 1.x and MCP `^1.0` lines; no runtime, MCP-contract or schema change.
 Production Composer metadata contains no candidate repositories, replacements or
 dependency aliases. The dev-main alias names only this companion's own development line.
@@ -61,7 +61,7 @@ and [HTTP statuses](https://github.com/laravel/mcp/blob/cfa4f38f82873eeb68485278
 | --- | --- | --- |
 | Retained core 0.26 candidate | `e25842cab4291837dcce2ff6f4815e58feab9079` | `^0.11.2` |
 | Core 0.27 candidate | `48ad4ef690363ca40ba7d3bd50e63e7fbe76ba4b` | `^1.0` |
-| Core 0.28 candidate | `6c3da95fcb3bc89a2ec0096346bd6efb11366cda` | `^1.0` |
+| Core 0.28 candidate | `269f749102f8d4c525c12e5486c3f57893d78d6b` | `^1.0` |
 
 Native minimum pins are AI 1.0.0
 `101c7ea33cd8569d82570f753fbf38e48b7d3d95` and MCP 1.0.0
@@ -80,7 +80,7 @@ native1-028-current lanes also run analysis/lint.
 
 To reproduce a candidate lane, use a disposable checkout, save its production
 manifest, fetch the frozen core manifest the workflow pins for that lane (core
-0.27 `48ad4ef` for native1-*, core 0.28 `6c3da95` for native1-028-*), then run:
+0.27 `48ad4ef` for native1-*, core 0.28 `269f749` for native1-028-*), then run:
 
 ```sh
 php .github/scripts/compatibility.php prepare native1-minimum /path/to/core-candidate.json
